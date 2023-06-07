@@ -1,0 +1,296 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.6, pytest-7.1.3, pluggy-1.0.0 -- /home/saikotdasjoy/.pyenv/versions/3.10.6/envs/lewagon/bin/python3.10
+cachedir: .pytest_cache
+rootdir: /home/saikotdasjoy/code/Saikot1997/data-train-at-scale/tests, configfile: pytest_kitt.ini
+plugins: asyncio-0.19.0, anyio-3.6.2
+asyncio: mode=strict
+collecting ... collected 8 items
+
+tests/train_at_scale/test_clean.py::test_clean_data FAILED               [ 12%]
+tests/train_at_scale/test_main_local.py::TestMainLocal::test_route_preprocess_and_train FAILED [ 25%]
+tests/train_at_scale/test_main_local.py::TestMainLocal::test_route_pred FAILED [ 37%]
+tests/train_at_scale/test_main_local.py::TestMainLocal::test_route_preprocess FAILED [ 50%]
+tests/train_at_scale/test_main_local.py::TestMainLocal::test_route_train FAILED [ 62%]
+tests/train_at_scale/test_model.py::test_model_can_fit FAILED            [ 75%]
+tests/train_at_scale/test_notebook.py::TestNotebook::test_y_pred PASSED  [ 87%]
+tests/train_at_scale/test_processor_pipeline.py::test_preprocess_features FAILED [100%]
+
+=================================== FAILURES ===================================
+_______________________________ test_clean_data ________________________________
+
+fixture_query_1k =      fare_amount           pickup_datetime  ...  dropoff_latitude  passenger_count
+0            8.9 2009-01-15 09:22:3...           4
+454          8.5 2014-12-27 16:47:42+00:00  ...         40.771263                4
+
+[455 rows x 7 columns]
+fixture_cleaned_1k =      fare_amount           pickup_datetime  ...  dropoff_latitude  passenger_count
+0       8.900000 2009-01-15 09:22:3...           4
+446     8.500000 2014-12-27 16:47:42+00:00  ...         40.771263                4
+
+[447 rows x 7 columns]
+
+    def test_clean_data(fixture_query_1k, fixture_cleaned_1k):
+        from taxifare.ml_logic.data import clean_data
+        df_cleaned = clean_data(fixture_query_1k)
+>       assert df_cleaned.shape == fixture_cleaned_1k.shape
+E       assert (455, 7) == (447, 7)
+E         At index 0 diff: 455 != 447
+E         Full diff:
+E         - (447, 7)
+E         ?   ^^
+E         + (455, 7)
+E         ?   ^^
+
+tests/train_at_scale/test_clean.py:6: AssertionError
+----------------------------- Captured stdout call -----------------------------
+✅ data cleaned
+________________ TestMainLocal.test_route_preprocess_and_train _________________
+
+self = <tests.train_at_scale.test_main_local.TestMainLocal object at 0x7f3227c9f7c0>
+
+    def test_route_preprocess_and_train(self):
+    
+        # 1) SETUP
+        data_query_path = Path(LOCAL_DATA_PATH).joinpath("raw",f"query_{MIN_DATE}_{MAX_DATE}_{DATA_SIZE}.csv")
+        data_query_exists = data_query_path.is_file()
+    
+        if data_query_exists:
+            # We start from a blank state. No cached files
+            shutil.copyfile(data_query_path, f'{data_query_path}_backup')
+            data_query_path.unlink()
+    
+        # 2) ACT
+        from taxifare.interface.main_local import preprocess_and_train
+    
+        # Check route runs correctly
+>       preprocess_and_train(min_date=MIN_DATE, max_date=MAX_DATE)
+
+tests/train_at_scale/test_main_local.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+min_date = '2009-01-01', max_date = '2015-01-01'
+
+    def preprocess_and_train(min_date:str = '2009-01-01', max_date:str = '2015-01-01') -> None:
+        """
+        - Query the raw dataset from Le Wagon's BigQuery dataset
+        - Cache query result as a local CSV if it doesn't exist locally
+        - Clean and preprocess data
+        - Train a Keras model on it
+        - Save the model
+        - Compute & save a validation performance metric
+        """
+    
+        print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess_and_train" + Style.RESET_ALL)
+    
+        min_date = parse(min_date).strftime('%Y-%m-%d') # e.g '2009-01-01'
+        max_date = parse(max_date).strftime('%Y-%m-%d') # e.g '2009-01-01'
+    
+        query = f"""
+            SELECT {",".join(COLUMN_NAMES_RAW)}
+            FROM {GCP_PROJECT_WAGON}.{BQ_DATASET}.raw_{DATA_SIZE}
+            WHERE pickup_datetime BETWEEN '{min_date}' AND '{max_date}'
+            ORDER BY pickup_datetime
+            """
+    
+        # Retrieve `query` data from BigQuery or from `data_query_cache_path` if the file already exists!
+        data_query_cache_path = Path(LOCAL_DATA_PATH).joinpath("raw", f"query_{min_date}_{max_date}_{DATA_SIZE}.csv")
+        data_query_cached_exists = data_query_cache_path.is_file()
+    
+        if data_query_cached_exists:
+            print("Loading data from local CSV...")
+    
+            # YOUR CODE HERE
+    
+        else:
+            print("Loading data from Querying Big Query server...")
+    
+            # YOUR CODE HERE
+    
+            # Save it locally to accelerate the next queries!
+>           data.to_csv(data_query_cache_path, header=True, index=False)
+E           NameError: name 'data' is not defined
+
+taxifare/interface/main_local.py:52: NameError
+----------------------------- Captured stdout call -----------------------------
+[34m
+Loading TensorFlow...[0m
+
+✅ TensorFlow loaded (0.0s)
+[35m
+ ⭐️ Use case: preprocess_and_train[0m
+Loading data from Querying Big Query server...
+----------------------------- Captured stderr call -----------------------------
+2023-05-29 13:41:56.571840: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-05-29 13:41:56.690996: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
+2023-05-29 13:41:56.691018: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+2023-05-29 13:41:56.717625: E tensorflow/stream_executor/cuda/cuda_blas.cc:2981] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2023-05-29 13:41:57.449840: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer.so.7'; dlerror: libnvinfer.so.7: cannot open shared object file: No such file or directory
+2023-05-29 13:41:57.449905: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer_plugin.so.7'; dlerror: libnvinfer_plugin.so.7: cannot open shared object file: No such file or directory
+2023-05-29 13:41:57.449913: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Cannot dlopen some TensorRT libraries. If you would like to use Nvidia GPU with TensorRT, please make sure the missing libraries mentioned above are installed properly.
+________________________ TestMainLocal.test_route_pred _________________________
+
+self = <tests.train_at_scale.test_main_local.TestMainLocal object at 0x7f3227c9e350>
+
+    def test_route_pred(self):
+        from taxifare.interface.main_local import pred
+    
+>       y_pred = pred()
+
+tests/train_at_scale/test_main_local.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+taxifare/interface/main_local.py:105: in pred
+    X_processed = preprocess_features(X_pred)
+taxifare/ml_logic/preprocessor.py:27: in preprocess_features
+    preprocessor = create_sklearn_preprocessor()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def create_sklearn_preprocessor() -> ColumnTransformer:
+        """
+        Scikit-learn pipeline that transforms a cleaned dataset of shape (_, 7)
+        into a preprocessed one of fixed shape (_, 65).
+    
+        Stateless operation: "fit_transform()" equals "transform()".
+        """
+    
+        pass  # YOUR CODE HERE
+>       return final_preprocessor
+E       NameError: name 'final_preprocessor' is not defined
+
+taxifare/ml_logic/preprocessor.py:23: NameError
+----------------------------- Captured stdout call -----------------------------
+[35m
+ ⭐️ Use case: pred[0m
+[34m
+Load latest model from local registry...[0m
+[34m
+Preprocessing features...[0m
+_____________________ TestMainLocal.test_route_preprocess ______________________
+
+self = <tests.train_at_scale.test_main_local.TestMainLocal object at 0x7f3227c9e380>
+fixture_query_1k =      fare_amount           pickup_datetime  ...  dropoff_latitude  passenger_count
+0            8.9 2009-01-15 09:22:3...           4
+454          8.5 2014-12-27 16:47:42+00:00  ...         40.771263                4
+
+[455 rows x 7 columns]
+fixture_processed_1k =            0    1    2    3    4    5   ...   60   61   62   63   64         65
+0    0.000000  0.0  0.0  0.0  1.0  0.0...0.0   6.500000
+446  0.428571  0.0  0.0  0.0  0.0  0.0  ...  0.0  0.0  0.0  0.0  0.0   8.500000
+
+[447 rows x 66 columns]
+
+    def test_route_preprocess(self, fixture_query_1k: pd.DataFrame, fixture_processed_1k: pd.DataFrame):
+>       from taxifare.interface.main_local import preprocess
+E       ImportError: cannot import name 'preprocess' from 'taxifare.interface.main_local' (/home/saikotdasjoy/code/Saikot1997/data-train-at-scale/taxifare/interface/main_local.py)
+
+tests/train_at_scale/test_main_local.py:67: ImportError
+________________________ TestMainLocal.test_route_train ________________________
+
+self = <tests.train_at_scale.test_main_local.TestMainLocal object at 0x7f3227c9e440>
+
+    def test_route_train(self):
+    
+        # SETUP
+        data_processed_path = Path(LOCAL_DATA_PATH).joinpath("processed",f"processed_{MIN_DATE}_{MAX_DATE}_{DATA_SIZE}.csv")
+        data_processed_exists = data_processed_path.is_file()
+        if data_processed_exists:
+            shutil.copyfile(data_processed_path, f'{data_processed_path}_backup')
+            data_processed_path.unlink()
+    
+        data_processed_fixture_path = "https://storage.googleapis.com/datascience-mlops/taxi-fare-ny/solutions/data_processed_fixture_2009-01-01_2015-01-01_1k.csv"
+        os.system(f"curl {data_processed_fixture_path} > {data_processed_path}")
+    
+        # ACT
+>       from taxifare.interface.main_local import train
+E       ImportError: cannot import name 'train' from 'taxifare.interface.main_local' (/home/saikotdasjoy/code/Saikot1997/data-train-at-scale/taxifare/interface/main_local.py)
+
+tests/train_at_scale/test_main_local.py:126: ImportError
+----------------------------- Captured stderr call -----------------------------
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  153k  100  153k    0     0  1088k      0 --:--:-- --:--:-- --:--:-- 1091k
+______________________________ test_model_can_fit ______________________________
+
+fixture_processed_1k =            0    1    2    3    4    5   ...   60   61   62   63   64         65
+0    0.000000  0.0  0.0  0.0  1.0  0.0...0.0   6.500000
+446  0.428571  0.0  0.0  0.0  0.0  0.0  ...  0.0  0.0  0.0  0.0  0.0   8.500000
+
+[447 rows x 66 columns]
+
+    def test_model_can_fit(fixture_processed_1k):
+    
+        from taxifare.ml_logic.model import initialize_model,compile_model, train_model
+        fixture_X_processed = fixture_processed_1k.to_numpy()[:,:-1]
+        fixture_y = fixture_processed_1k.to_numpy()[:,-1]
+>       model = initialize_model(fixture_X_processed.shape[1:])
+
+tests/train_at_scale/test_model.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input_shape = (65,)
+
+    def initialize_model(input_shape: tuple) -> Model:
+        """
+        Initialize the Neural Network with random weights
+        """
+        # YOUR CODE HERE
+    
+        print("✅ Model initialized")
+    
+>       return model
+E       NameError: name 'model' is not defined
+
+taxifare/ml_logic/model.py:28: NameError
+----------------------------- Captured stdout call -----------------------------
+✅ Model initialized
+___________________________ test_preprocess_features ___________________________
+
+fixture_cleaned_1k =      fare_amount           pickup_datetime  ...  dropoff_latitude  passenger_count
+0       8.900000 2009-01-15 09:22:3...           4
+446     8.500000 2014-12-27 16:47:42+00:00  ...         40.771263                4
+
+[447 rows x 7 columns]
+fixture_processed_1k =            0    1    2    3    4    5   ...   60   61   62   63   64         65
+0    0.000000  0.0  0.0  0.0  1.0  0.0...0.0   6.500000
+446  0.428571  0.0  0.0  0.0  0.0  0.0  ...  0.0  0.0  0.0  0.0  0.0   8.500000
+
+[447 rows x 66 columns]
+
+    def test_preprocess_features(fixture_cleaned_1k, fixture_processed_1k):
+        from taxifare.ml_logic.preprocessor import preprocess_features
+        fixture_X_cleaned = fixture_cleaned_1k.drop(columns=['fare_amount'])
+        fixture_X_processed = fixture_processed_1k.to_numpy()[:,:-1]
+    
+>       X_processed = preprocess_features(fixture_X_cleaned)
+
+tests/train_at_scale/test_processor_pipeline.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+taxifare/ml_logic/preprocessor.py:27: in preprocess_features
+    preprocessor = create_sklearn_preprocessor()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def create_sklearn_preprocessor() -> ColumnTransformer:
+        """
+        Scikit-learn pipeline that transforms a cleaned dataset of shape (_, 7)
+        into a preprocessed one of fixed shape (_, 65).
+    
+        Stateless operation: "fit_transform()" equals "transform()".
+        """
+    
+        pass  # YOUR CODE HERE
+>       return final_preprocessor
+E       NameError: name 'final_preprocessor' is not defined
+
+taxifare/ml_logic/preprocessor.py:23: NameError
+----------------------------- Captured stdout call -----------------------------
+[34m
+Preprocessing features...[0m
+=========================== short test summary info ============================
+FAILED tests/train_at_scale/test_clean.py::test_clean_data - assert (455, 7) ...
+FAILED tests/train_at_scale/test_main_local.py::TestMainLocal::test_route_preprocess_and_train
+FAILED tests/train_at_scale/test_main_local.py::TestMainLocal::test_route_pred
+FAILED tests/train_at_scale/test_main_local.py::TestMainLocal::test_route_preprocess
+FAILED tests/train_at_scale/test_main_local.py::TestMainLocal::test_route_train
+FAILED tests/train_at_scale/test_model.py::test_model_can_fit - NameError: na...
+FAILED tests/train_at_scale/test_processor_pipeline.py::test_preprocess_features
+========================= 7 failed, 1 passed in 3.80s ==========================
